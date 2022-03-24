@@ -1,0 +1,12 @@
+Goal: Reverse-engineer Catboost model object so that we can run prediction with it
+
+1. Install Catboost:
+   pip install catboost
+2. Install CityHash:
+   pip install clickhouse-cityhash
+3. Download the Adult data set from https://archive.ics.uci.edu/ml/datasets/Adult. Get the files
+   adult.data and adult.test and place them in the same directory as the training script train.py.
+4. Run train.py to fit the Catboost model on the Adult dataset. The script will save the model
+   as a JSON file named adult_model.json.
+5. Finally, run preprocessing_prototype.py to inspect the preprocessing steps in Catboost.
+   You may want to study the Python script more carefully to understand all details.
