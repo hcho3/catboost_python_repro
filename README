@@ -8,5 +8,5 @@ Goal: Reverse-engineer Catboost model object so that we can run prediction with 
    adult.data and adult.test and place them in the same directory as the training script train.py.
 4. Run train.py to fit the Catboost model on the Adult dataset. The script will save the model
    as a JSON file named adult_model.json.
-5. Finally, run preprocessing_prototype.py to inspect the preprocessing steps in Catboost.
+5. Finally, run main.py to see how we preprocess the features and evaluate Catboost trees.
    You may want to study the Python script more carefully to understand all details.

@@ -2,11 +2,12 @@ import warnings
 import json
 import pandas as pd
 import numpy as np
-from load_adult import process_df, load_adult_train, load_adult_test, get_categorical_features
 from hashes import _hash_string_cat
 from class_defs import TFloatSplit, TOneHotSplit, TFeatureCombination, TModelCtrBase, \
         TModelCtr, TBucket, TDenseIndexHashBuilder, TDenseIndexHashView, TCtrValueTable, \
-        TCtrData, TCtrFeature, TFeaturePosition, TCatFeature
+        TCtrData, TCtrFeature, TFeaturePosition, TCatFeature, TFloatFeature
+
+MAX_VALUES_PER_BIN = 254
 
 def _hash_categorical_column(cat_column):
     return pd.Series([_hash_string_cat(str(cat)) for cat in cat_column])
@@ -107,6 +108,18 @@ def load_ctr_data(model):
         learn_ctrs[ctr_base] = _load_learn_ctr(value, ctr_base=ctr_base)
     return TCtrData(learn_ctrs=learn_ctrs)
 
+def load_float_features_info(model):
+    float_features_info = []
+    if "float_features" in model["features_info"]:
+        for entry in model["features_info"]["float_features"]:
+            feat = TFloatFeature(has_nans=entry["has_nans"],
+                                 position=TFeaturePosition(entry["feature_index"],
+                                                           entry["flat_feature_index"]),
+                                 borders=entry["borders"],
+                                 nan_value_treatment=entry["nan_value_treatment"])
+            float_features_info.append(feat)
+    return float_features_info
+
 def load_categorical_features_info(model):
     cat_features_info = []
     if "categorical_features" in model["features_info"]:
@@ -132,6 +145,8 @@ def load_used_model_ctrs(model):
                                   prior_denom=ctr_entry["prior_denomerator"],
                                   shift=ctr_entry["shift"],
                                   scale=ctr_entry["scale"])
+            if len(ctr_entry["borders"]) >= MAX_VALUES_PER_BIN:
+                raise NotImplementedError("")
             used_model_ctrs.append(TCtrFeature(ctr=model_ctr, borders=ctr_entry["borders"]))
     return used_model_ctrs
 
@@ -188,28 +203,16 @@ def calc_ctr_features(*, converted_df, ctr_data, used_model_ctrs, cat_features_i
             ctr_feature_values.append(res)
     return ctr_feature_values
 
-def main():
-    cat_features = get_categorical_features()
-    X_test, _, _ = load_adult_test("adult.test")
-    X_test = X_test.head(2)
-    print(X_test)
-    converted_df = hash_categorical_columns(X_test, categorical_features=cat_features)
-    print(converted_df)
-
-    with open("adult_model.json", "r") as f:
-        model = json.load(f)
-    ctr_data = load_ctr_data(model)
-    print(f"ctr_data = {ctr_data}")
-
-    cat_features_info = load_categorical_features_info(model)
-    print(f"cat_features_info = {cat_features_info}")
-    used_model_ctrs = load_used_model_ctrs(model)
-    print(f"used_model_ctrs = {used_model_ctrs}")
+# Return numerical features, followed by target-encoded categorical features.
+def calc_converted_input(*, converted_df, ctr_data, used_model_ctrs, float_features_info,
+                         cat_features_info):
+    converted_input = []
+    for float_feature in float_features_info:
+        converted_input.extend(converted_df.iloc[:, float_feature.position.flat_index].tolist())
     ctr_features = calc_ctr_features(converted_df=converted_df,
                                      ctr_data=ctr_data,
                                      used_model_ctrs=used_model_ctrs,
                                      cat_features_info=cat_features_info)
     print(f"ctr_features = {ctr_features}")
-
-if __name__ == "__main__":
-    main()
+    converted_input.extend(ctr_features)
+    return converted_input
