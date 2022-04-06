@@ -1,6 +1,7 @@
 import numpy as np
 from class_defs import ObliviousTree
 
+
 def load_oblivious_trees(model, *, float_features_info, used_model_ctrs):
     if "trees" in model:
         raise NotImplementedError("")
@@ -19,8 +20,7 @@ def load_oblivious_trees(model, *, float_features_info, used_model_ctrs):
         for split_json in tree_json["splits"]:
             split_index = split_json["split_index"]
             for fid in range(len(border_offsets) - 1):
-                if (border_offsets[fid] <= split_index and
-                        split_index < border_offsets[fid + 1]):
+                if border_offsets[fid] <= split_index < border_offsets[fid + 1]:
                     feature_id.append(fid)
                     break
             threshold.append(split_json["border"])
@@ -28,6 +28,7 @@ def load_oblivious_trees(model, *, float_features_info, used_model_ctrs):
                                    feature_id=feature_id,
                                    threshold=threshold))
     return trees
+
 
 def predict_leaf(trees, *, converted_input, doc_count):
     assert len(converted_input) % doc_count == 0

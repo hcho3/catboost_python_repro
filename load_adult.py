@@ -5,7 +5,6 @@ column_names = ["age", "work_class", "final_weight", "education", "education_num
                 "marital_status", "occupation", "relationship", "race", "sex", "capital_gain",
                 "capital_loss", "hours_per_week", "native_country", "income_over_50k"]
 
-
 categorical_features = ["work_class", "marital_status", "occupation", "relationship", "race",
                         "sex", "born_usa"]
 
@@ -37,10 +36,12 @@ def process_df(df):
     df = df.drop("final_weight", axis=1)
     return df.drop("income_over_50k", axis=1), df["income_over_50k"], sample_weight
 
+
 def load_adult_train(train_path):
     train = pd.read_csv(train_path, names=column_names)
     X_train, y_train, sample_weight = process_df(train)
     return X_train, y_train, sample_weight
+
 
 def load_adult_test(test_path):
     test = pd.read_csv(test_path, names=column_names, skiprows=1)

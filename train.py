@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 import pandas as pd
-import numpy as np
 from catboost import CatBoostClassifier, Pool
-from sklearn.metrics import log_loss
 from load_adult import process_df, load_adult_train, load_adult_test, get_categorical_features
+
 
 def main():
     pd.set_option("display.max_columns", None)
@@ -37,6 +36,7 @@ def main():
     pool_test = Pool(X_test.head(2), cat_features=cat_features)
     y_leaf = clf2.calc_leaf_indexes(pool_test, thread_count=1)
     print(f"y_leaf =\n{y_leaf}")
+
 
 if __name__ == "__main__":
     main()

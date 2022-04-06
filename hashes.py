@@ -1,5 +1,6 @@
 from clickhouse_cityhash.cityhash import CityHash64
 
+
 def _int_hash(key: int):
     key += ~(key << 32)
     key ^= (key >> 22)
@@ -11,12 +12,14 @@ def _int_hash(key: int):
     key ^= (key >> 31)
     return key
 
+
 def _multi_hash(*args):
     assert len(args) >= 2
     ret = args[0]
     for x in args[1:]:
         ret = _int_hash(ret) ^ x
     return ret
+
 
 def _vec_hash(vec):
     res = 1988712
@@ -26,6 +29,7 @@ def _vec_hash(vec):
         else:
             res = 984121 * res + hash(e)
     return res
+
 
 def _hash_string_cat(x):
     return CityHash64(x) & 0xffffffff
