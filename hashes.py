@@ -1,7 +1,8 @@
+from typing import List, Any
 from clickhouse_cityhash.cityhash import CityHash64
 
 
-def _int_hash(key: int):
+def _int_hash(key: int) -> int:
     key += ~(key << 32)
     key ^= (key >> 22)
     key += ~(key << 13)
@@ -13,7 +14,7 @@ def _int_hash(key: int):
     return key
 
 
-def _multi_hash(*args):
+def _multi_hash(*args) -> int:
     assert len(args) >= 2
     ret = args[0]
     for x in args[1:]:
@@ -21,7 +22,7 @@ def _multi_hash(*args):
     return ret
 
 
-def _vec_hash(vec):
+def _vec_hash(vec: List[Any]) -> int:
     res = 1988712
     for e in vec:
         if isinstance(e, int):
@@ -31,5 +32,5 @@ def _vec_hash(vec):
     return res
 
 
-def _hash_string_cat(x):
+def _hash_string_cat(x: str) -> int:
     return CityHash64(x) & 0xffffffff

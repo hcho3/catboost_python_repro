@@ -1,8 +1,14 @@
+from typing import List
 import numpy as np
-from class_defs import ObliviousTree
+from class_defs import TFloatFeature, TCtrFeature, ObliviousTree
 
 
-def load_oblivious_trees(model, *, float_features_info, used_model_ctrs):
+def load_oblivious_trees(
+        model,
+        *,
+        float_features_info: List[TFloatFeature],
+        used_model_ctrs: List[TCtrFeature]
+) -> List[ObliviousTree]:
     if "trees" in model:
         raise NotImplementedError("")
     assert "oblivious_trees" in model
@@ -11,7 +17,6 @@ def load_oblivious_trees(model, *, float_features_info, used_model_ctrs):
         border_offsets.append(border_offsets[-1] + len(float_feature.borders))
     for ctr_feature in used_model_ctrs:
         border_offsets.append(border_offsets[-1] + len(ctr_feature.borders))
-    print(border_offsets)
 
     trees = []
     for tree_json in model["oblivious_trees"]:
@@ -30,7 +35,12 @@ def load_oblivious_trees(model, *, float_features_info, used_model_ctrs):
     return trees
 
 
-def predict_leaf(trees, *, converted_input, doc_count):
+def predict_leaf(
+        trees: List[ObliviousTree],
+        *,
+        converted_input: List[float],
+        doc_count: int
+) -> np.ndarray:
     assert len(converted_input) % doc_count == 0
     leaf_out = []
     for doc_id in range(doc_count):

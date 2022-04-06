@@ -54,7 +54,11 @@ class TModelCtr:
     shift: float
     scale: float
 
-    def calc(self, count_in_class: float, total_count: float):
+    def calc(
+            self,
+            count_in_class: float,
+            total_count: float
+    ) -> float:
         ctr = (count_in_class + self.prior_num) / (total_count + self.prior_denom)
         return (ctr + self.shift) * self.scale
 

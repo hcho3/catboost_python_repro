@@ -2,7 +2,7 @@ import json
 from preprocess import hash_categorical_columns, load_ctr_data, load_float_features_info, \
         load_categorical_features_info, load_used_model_ctrs, calc_converted_input
 from evaluate import load_oblivious_trees, predict_leaf
-from load_adult import process_df, load_adult_train, load_adult_test, get_categorical_features
+from load_adult import load_adult_test, get_categorical_features
 
 
 def main():

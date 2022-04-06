@@ -2,7 +2,7 @@ import warnings
 import json
 import pandas as pd
 import numpy as np
-from typing import List
+from typing import List, Dict, Any, Union, Optional
 from hashes import _hash_string_cat
 from class_defs import TFloatSplit, TOneHotSplit, TFeatureCombination, TModelCtrBase, \
     TModelCtr, TBucket, TDenseIndexHashBuilder, TDenseIndexHashView, TCtrValueTable, \
@@ -11,11 +11,15 @@ from class_defs import TFloatSplit, TOneHotSplit, TFeatureCombination, TModelCtr
 MAX_VALUES_PER_BIN = 254
 
 
-def _hash_categorical_column(cat_column):
+def _hash_categorical_column(cat_column: pd.Series) -> pd.Series:
     return pd.Series([_hash_string_cat(str(cat)) for cat in cat_column])
 
 
-def hash_categorical_columns(df, *, categorical_features):
+def hash_categorical_columns(
+        df: pd.DataFrame,
+        *,
+        categorical_features: List[str]
+) -> pd.DataFrame:
     converted_df = {}
     for (col_name, column) in df.items():
         if col_name in categorical_features:
@@ -28,7 +32,7 @@ def hash_categorical_columns(df, *, categorical_features):
     return converted_df
 
 
-def _load_projection(projection_elements):
+def _load_projection(projection_elements: List[Dict[str, Any]]) -> TFeatureCombination:
     cat_features = []
     bin_features = []
     onehot_features = []
@@ -50,7 +54,7 @@ def _load_projection(projection_elements):
     return projection
 
 
-def load_ctr_base_from_str(s):
+def load_ctr_base_from_str(s: str) -> TModelCtrBase:
     ctr_base_json = json.loads(s)
     ctr_type = ctr_base_json["type"]
 
@@ -60,7 +64,7 @@ def load_ctr_base_from_str(s):
     return ctr_base
 
 
-def _fast_clp2(t: int):
+def _fast_clp2(t: int) -> int:
     """
     Computes the next power of 2 higher or equal to the integer parameter `t`.
      * If `t` is a power of 2 will return `t`.
@@ -73,16 +77,24 @@ def _fast_clp2(t: int):
     return p
 
 
-def _get_proper_bucket_count(unique_values_count: int, *, load_factor: float = 0.5):
+def _get_proper_bucket_count(
+        unique_values_count: int,
+        *,
+        load_factor: float = 0.5
+) -> int:
     if unique_values_count == 0:
         return 2
     return _fast_clp2(int(unique_values_count / load_factor))
 
 
-def _load_learn_ctr(ctr_data_entry, *, ctr_base: TModelCtrBase):
-    hash_stride = ctr_data_entry["hash_stride"]
+def _load_learn_ctr(
+        ctr_data_entry,
+        *,
+        ctr_base: TModelCtrBase
+) -> TCtrValueTable:
+    hash_stride: int = ctr_data_entry["hash_stride"]
     target_classes_count = hash_stride - 1
-    hash_map = ctr_data_entry["hash_map"]
+    hash_map: List[Union[str, int]] = ctr_data_entry["hash_map"]
     if ctr_base.ctr_type != "Borders" or target_classes_count != 2:
         raise NotImplementedError("")
     blob_size = len(hash_map) // hash_stride
@@ -107,7 +119,7 @@ def _load_learn_ctr(ctr_data_entry, *, ctr_base: TModelCtrBase):
     return learn_ctr
 
 
-def load_ctr_data(model):
+def load_ctr_data(model) -> TCtrData:
     learn_ctrs = {}
     for key, value in model["ctr_data"].items():
         ctr_base = load_ctr_base_from_str(key)
@@ -118,7 +130,7 @@ def load_ctr_data(model):
     return TCtrData(learn_ctrs=learn_ctrs)
 
 
-def load_float_features_info(model):
+def load_float_features_info(model) -> List[TFloatFeature]:
     float_features_info = []
     if "float_features" in model["features_info"]:
         for entry in model["features_info"]["float_features"]:
@@ -131,7 +143,7 @@ def load_float_features_info(model):
     return float_features_info
 
 
-def load_categorical_features_info(model):
+def load_categorical_features_info(model) -> List[TCatFeature]:
     cat_features_info = []
     if "categorical_features" in model["features_info"]:
         for cat_entry in model["features_info"]["categorical_features"]:
@@ -145,7 +157,7 @@ def load_categorical_features_info(model):
     return cat_features_info
 
 
-def load_used_model_ctrs(model):
+def load_used_model_ctrs(model) -> List[TCtrFeature]:
     used_model_ctrs = []
     if "ctrs" in model["features_info"]:
         for ctr_entry in model["features_info"]["ctrs"]:
@@ -163,8 +175,14 @@ def load_used_model_ctrs(model):
     return used_model_ctrs
 
 
-def _calc_ctr_hashes(*, binarized_features, hashed_cat_features, transposed_cat_feature_indexes,
-                     binarized_indexes, doc_count) -> List[int]:
+def _calc_ctr_hashes(
+        *,
+        binarized_features: Optional[List[int]],
+        hashed_cat_features: List[int],
+        transposed_cat_feature_indexes: List[int],
+        binarized_indexes: List[int],
+        doc_count: int
+) -> List[int]:
     def _calc_hash(a: np.uint64, b: np.uint64):
         MAGIC_MULT = np.uint64(0x4906ba494954cb65)
         return MAGIC_MULT * (a + MAGIC_MULT * b)
@@ -184,7 +202,13 @@ def _calc_ctr_hashes(*, binarized_features, hashed_cat_features, transposed_cat_
     return result.tolist()
 
 
-def calc_ctr_features(*, converted_df, ctr_data, used_model_ctrs, cat_features_info):
+def calc_ctr_features(
+        *,
+        converted_df: pd.DataFrame,
+        ctr_data: TCtrData,
+        used_model_ctrs: List[TCtrFeature],
+        cat_features_info: List[TCatFeature]
+) -> List[float]:
     hashed_cat_features = []
     for cat_feature in cat_features_info:
         hashed_cat_features.extend(converted_df.iloc[:, cat_feature.position.flat_index].tolist())
@@ -220,8 +244,14 @@ def calc_ctr_features(*, converted_df, ctr_data, used_model_ctrs, cat_features_i
 
 
 # Return numerical features, followed by target-encoded categorical features.
-def calc_converted_input(*, converted_df, ctr_data, used_model_ctrs, float_features_info,
-                         cat_features_info):
+def calc_converted_input(
+        *,
+        converted_df: pd.DataFrame,
+        ctr_data: TCtrData,
+        used_model_ctrs: List[TCtrFeature],
+        float_features_info: List[TFloatFeature],
+        cat_features_info: List[TCatFeature]
+) -> List[float]:
     converted_input = []
     for float_feature in float_features_info:
         converted_input.extend(converted_df.iloc[:, float_feature.position.flat_index].tolist())

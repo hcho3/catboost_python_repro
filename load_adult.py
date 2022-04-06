@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import pandas as pd
+from typing import List, Tuple
 
 column_names = ["age", "work_class", "final_weight", "education", "education_num", 
                 "marital_status", "occupation", "relationship", "race", "sex", "capital_gain",
@@ -9,11 +10,11 @@ categorical_features = ["work_class", "marital_status", "occupation", "relations
                         "sex", "born_usa"]
 
 
-def get_categorical_features():
+def get_categorical_features() -> List[str]:
     return categorical_features
 
 
-def process_df(df):
+def process_df(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series, pd.Series]:
     for column in ["work_class", "education", "marital_status", "occupation",
                    "relationship", "race", "sex", "native_country", "income_over_50k"]:
         df[column] = df[column].str.lstrip()
@@ -37,13 +38,13 @@ def process_df(df):
     return df.drop("income_over_50k", axis=1), df["income_over_50k"], sample_weight
 
 
-def load_adult_train(train_path):
+def load_adult_train(train_path: str) -> Tuple[pd.DataFrame, pd.Series, pd.Series]:
     train = pd.read_csv(train_path, names=column_names)
     X_train, y_train, sample_weight = process_df(train)
     return X_train, y_train, sample_weight
 
 
-def load_adult_test(test_path):
+def load_adult_test(test_path: str) -> Tuple[pd.DataFrame, pd.Series, pd.Series]:
     test = pd.read_csv(test_path, names=column_names, skiprows=1)
     X_test, y_test, test_sample_weight = process_df(test)
     return X_test, y_test, test_sample_weight
