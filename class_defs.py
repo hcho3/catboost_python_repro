@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional, Dict
 from hashes import _multi_hash, _vec_hash
+import numpy as np
 
 
 @dataclass
@@ -89,10 +90,10 @@ class TDenseIndexHashBuilder:
 
 @dataclass
 class TDenseIndexHashView:
-    hash_mask: int
+    hash_mask: np.uint64
     buckets: List[TBucket]
 
-    def get_index(self, hash: int):
+    def get_index(self, hash: np.uint64):
         zz = hash & self.hash_mask
         while self.buckets[zz].hash is not None:
             if self.buckets[zz].hash == hash:

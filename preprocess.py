@@ -2,6 +2,7 @@ import warnings
 import json
 import pandas as pd
 import numpy as np
+import numpy.typing as npt
 from typing import List, Dict, Any, Union, Optional
 from hashes import _hash_string_cat
 from class_defs import TFloatSplit, TOneHotSplit, TFeatureCombination, TModelCtrBase, \
@@ -177,13 +178,13 @@ def load_used_model_ctrs(model) -> List[TCtrFeature]:
 
 def _calc_ctr_hashes(
         *,
-        binarized_features: Optional[List[int]],
-        hashed_cat_features: List[int],
+        binarized_features: Optional[npt.NDArray[np.int64]],
+        hashed_cat_features: npt.NDArray[np.int64],
         transposed_cat_feature_indexes: List[int],
         binarized_indexes: List[int],
         doc_count: int
-) -> List[int]:
-    def _calc_hash(a: np.uint64, b: np.uint64):
+) -> npt.NDArray[np.uint64]:
+    def _calc_hash(a: np.uint64, b: np.uint64) -> np.uint64:
         MAGIC_MULT = np.uint64(0x4906ba494954cb65)
         return MAGIC_MULT * (a + MAGIC_MULT * b)
 
@@ -196,10 +197,10 @@ def _calc_ctr_hashes(
         warnings.filterwarnings("ignore", message="overflow encountered in ulong_scalars")
         for feature_idx in transposed_cat_feature_indexes:
             for i in range(doc_count):
-                feat = np.uint64(hashed_cat_features[feature_idx * doc_count + i])
+                feat = np.uint64(hashed_cat_features[i, feature_idx])
                 feat = np.uint64(np.int32(feat))
                 result[i] = _calc_hash(result[i], feat)
-    return result.tolist()
+    return result
 
 
 def calc_ctr_features(
@@ -208,14 +209,13 @@ def calc_ctr_features(
         ctr_data: TCtrData,
         used_model_ctrs: List[TCtrFeature],
         cat_features_info: List[TCatFeature]
-) -> List[float]:
-    hashed_cat_features = []
-    for cat_feature in cat_features_info:
-        hashed_cat_features.extend(converted_df.iloc[:, cat_feature.position.flat_index].tolist())
+) -> npt.NDArray[np.float64]:
+    cat_flat_indexes = [cat_feature.position.flat_index for cat_feature in cat_features_info]
+    hashed_cat_features: npt.NDArray[np.int64] = converted_df.iloc[:, cat_flat_indexes].values
     doc_count = len(converted_df)
 
-    ctr_feature_values = []
-    for model_ctr in used_model_ctrs:
+    ctr_feature_values = np.zeros((doc_count, len(used_model_ctrs)), dtype=np.float64)
+    for ctr_id, model_ctr in enumerate(used_model_ctrs):
         transposed_cat_feature_indexes = model_ctr.ctr.base.projection.cat_features
         # binarized_indexes will remain empty, as long as we only include a single categorical
         # feature in each CTR
@@ -229,17 +229,17 @@ def calc_ctr_features(
                                       doc_count=doc_count)
         assert len(ctr_hashes) == doc_count
         ctr_value_table = ctr_data.learn_ctrs[model_ctr.ctr.base]
-        hash_index_resolver = TDenseIndexHashView(hash_mask=len(ctr_value_table.index_buckets) - 1,
-                                                  buckets=ctr_value_table.index_buckets)
-        for e in ctr_hashes:
+        hash_index_resolver = TDenseIndexHashView(
+            hash_mask=np.uint64(len(ctr_value_table.index_buckets) - 1),
+            buckets=ctr_value_table.index_buckets)
+        for doc_id, e in enumerate(ctr_hashes):
             ptr_bucket = hash_index_resolver.get_index(e)
             if ptr_bucket:
                 a = ctr_value_table.ctr_int_array[ptr_bucket * 2]
                 b = ctr_value_table.ctr_int_array[ptr_bucket * 2 + 1]
-                res = model_ctr.ctr.calc(b, a + b)
+                ctr_feature_values[doc_id, ctr_id] = model_ctr.ctr.calc(b, a + b)
             else:
-                res = model_ctr.ctr.calc(0, 0)
-            ctr_feature_values.append(res)
+                ctr_feature_values[doc_id, ctr_id] = model_ctr.ctr.calc(0, 0)
     return ctr_feature_values
 
 
@@ -251,14 +251,12 @@ def calc_converted_input(
         used_model_ctrs: List[TCtrFeature],
         float_features_info: List[TFloatFeature],
         cat_features_info: List[TCatFeature]
-) -> List[float]:
-    converted_input = []
-    for float_feature in float_features_info:
-        converted_input.extend(converted_df.iloc[:, float_feature.position.flat_index].tolist())
+) -> npt.NDArray[np.float64]:
+    float_flat_indexes = [x.position.flat_index for x in float_features_info]
+    float_features = converted_df.iloc[:, float_flat_indexes].values.astype(np.float64)
     ctr_features = calc_ctr_features(converted_df=converted_df,
                                      ctr_data=ctr_data,
                                      used_model_ctrs=used_model_ctrs,
                                      cat_features_info=cat_features_info)
     print(f"ctr_features = {ctr_features}")
-    converted_input.extend(ctr_features)
-    return converted_input
+    return np.hstack((float_features, ctr_features))

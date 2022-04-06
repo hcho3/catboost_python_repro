@@ -1,5 +1,6 @@
 from typing import List
 import numpy as np
+import numpy.typing as npt
 from class_defs import TFloatFeature, TCtrFeature, ObliviousTree
 
 
@@ -38,17 +39,16 @@ def load_oblivious_trees(
 def predict_leaf(
         trees: List[ObliviousTree],
         *,
-        converted_input: List[float],
+        converted_input: npt.NDArray[np.float64],
         doc_count: int
-) -> np.ndarray:
-    assert len(converted_input) % doc_count == 0
-    leaf_out = []
+) -> npt.NDArray[np.int32]:
+    assert converted_input.shape[0] == doc_count
+    leaf_out = np.zeros((doc_count, len(trees)), dtype=np.int32)
     for doc_id in range(doc_count):
-        for tree in trees:
+        for tree_id, tree in enumerate(trees):
             leaf_idx = 0
             for depth, (feature_id, threshold) in enumerate(zip(tree.feature_id, tree.threshold)):
-                res = 1 if converted_input[feature_id * doc_count + doc_id] > threshold else 0
+                res = 1 if converted_input[doc_id, feature_id] > threshold else 0
                 leaf_idx |= (res << depth)
-            leaf_out.append(leaf_idx)
-    leaf_out = np.array(leaf_out, dtype=np.int32).reshape((doc_count, -1))
+            leaf_out[doc_id, tree_id] = leaf_idx
     return leaf_out
