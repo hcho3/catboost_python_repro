@@ -10,3 +10,6 @@ Goal: Reverse-engineer Catboost model object so that we can run prediction with 
    as a JSON file named adult_model.json.
 5. Finally, run e2e_demo.py to see how we preprocess the features and evaluate Catboost trees.
    You may want to study the Python script more carefully to understand all details.
+6. Run target_encoder_demo.py to observe that most of the preprocessing for categorical data can
+   be abstracted as a target encoding operator. The target encoding operator is a lookup table
+   that maps each possible categorical input to a real number.
