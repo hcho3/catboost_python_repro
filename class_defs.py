@@ -98,7 +98,7 @@ class TDenseIndexHashView:
         while self.buckets[zz].hash is not None:
             if self.buckets[zz].hash == hash:
                 return self.buckets[zz].index_value
-            zz = (zz + 1) & self.hash_mask
+            zz = (zz + np.uint64(1)) & self.hash_mask
         return None  # not found
 
 

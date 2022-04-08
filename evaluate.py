@@ -41,9 +41,9 @@ def predict_leaf(
         *,
         converted_input: npt.NDArray[np.float64],
         doc_count: int
-) -> npt.NDArray[np.int32]:
+) -> npt.NDArray[np.uint32]:
     assert converted_input.shape[0] == doc_count
-    leaf_out = np.zeros((doc_count, len(trees)), dtype=np.int32)
+    leaf_out = np.zeros((doc_count, len(trees)), dtype=np.uint32)
     for doc_id in range(doc_count):
         for tree_id, tree in enumerate(trees):
             leaf_idx = 0

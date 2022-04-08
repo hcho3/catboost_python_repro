@@ -24,11 +24,9 @@ def hash_categorical_columns(
     converted_df = {}
     for (col_name, column) in df.items():
         if col_name in categorical_features:
-            if column.dtype.name == "category":
-                raise NotImplementedError("")
-            converted_df[col_name] = _hash_categorical_column(column)
+            converted_df[col_name] = _hash_categorical_column(column).tolist()
         else:
-            converted_df[col_name] = column.copy()
+            converted_df[col_name] = column.tolist()
     converted_df = pd.DataFrame(converted_df)
     return converted_df
 
@@ -234,7 +232,7 @@ def calc_ctr_features(
             buckets=ctr_value_table.index_buckets)
         for doc_id, e in enumerate(ctr_hashes):
             ptr_bucket = hash_index_resolver.get_index(e)
-            if ptr_bucket:
+            if ptr_bucket is not None:
                 a = ctr_value_table.ctr_int_array[ptr_bucket * 2]
                 b = ctr_value_table.ctr_int_array[ptr_bucket * 2 + 1]
                 ctr_feature_values[doc_id, ctr_id] = model_ctr.ctr.calc(b, a + b)
