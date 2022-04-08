@@ -13,9 +13,10 @@ def wait_for_keypress():
 
 
 def main():
-    pd.set_option("display.max_rows", 100)
+    pd.set_option("display.max_rows", 6)
     pd.set_option("display.max_columns", None)
     pd.set_option("display.expand_frame_repr", False)
+    np.set_printoptions(threshold=100)
 
     cat_features = get_categorical_features()
     X_train, _, _ = load_adult_train("adult.data")
@@ -49,10 +50,13 @@ def main():
     ]))
     n_combo = len(cartesian_product)
 
-    ref_row = X_train.iloc[0:1, :]
+    print("Iterating all combination of categorical features...")
+    ref_row = X_train.iloc[3:4, :]
     df = pd.concat([ref_row] * n_combo, ignore_index=True)
     for row_id, item in enumerate(cartesian_product):
         df.iloc[row_id, used_cat_features_flat_index] = item
+    print(f"df =\n{df}")
+    wait_for_keypress()
 
     converted_df = hash_categorical_columns(df, categorical_features=cat_features)
     print(f"converted_df =\n{converted_df}")
