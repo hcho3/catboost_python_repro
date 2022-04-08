@@ -11,10 +11,11 @@ def main():
     print(X_train.head(10))
     X_test, y_test, test_sample_weight = load_adult_test("adult.test")
 
-    clf = CatBoostClassifier(n_estimators=10,
+    clf = CatBoostClassifier(n_estimators=30,
                              loss_function="Logloss",
                              learning_rate=0.1,
                              depth=3, task_type="CPU",
+                             simple_ctr=["Borders"],  # Other CTR modes not yet supported
                              random_state=1,
                              one_hot_max_size=0,
                              thread_count=1,
