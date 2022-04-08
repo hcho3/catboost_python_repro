@@ -1,19 +1,27 @@
 import json
 import itertools
 import pandas as pd
+import numpy as np
 from preprocess import load_ctr_data, load_categorical_features_info, \
     load_used_model_ctrs, hash_categorical_columns, calc_ctr_features
 from hashes import _hash_string_cat
 from load_adult import load_adult_train, get_categorical_features
 
-import numpy as np
+
+def wait_for_keypress():
+    input("Press Enter to continue...")
+
 
 def main():
     pd.set_option("display.max_rows", 100)
     pd.set_option("display.max_columns", None)
+    pd.set_option("display.expand_frame_repr", False)
 
     cat_features = get_categorical_features()
     X_train, _, _ = load_adult_train("adult.data")
+    print(f"X_train =\n{X_train.head(10)}")
+    wait_for_keypress()
+
     for col_name in X_train:
         if col_name in cat_features:
             print(f"{col_name:=^40}")
@@ -21,6 +29,7 @@ def main():
             for cat_code, category in enumerate(X_train[col_name].cat.categories):
                 encoded_category = _hash_string_cat(str(category))
                 print(f"{cat_code: <2}  {category: <23}  {encoded_category: >10}")
+    wait_for_keypress()
 
     with open("adult_model.json", "r") as f:
         model = json.load(f)
@@ -46,12 +55,13 @@ def main():
         df.iloc[row_id, used_cat_features_flat_index] = item
 
     converted_df = hash_categorical_columns(df, categorical_features=cat_features)
-    print(converted_df)
+    print(f"converted_df =\n{converted_df}")
+    wait_for_keypress()
     ctr_features = calc_ctr_features(converted_df=converted_df,
                                      ctr_data=ctr_data,
                                      used_model_ctrs=used_model_ctrs,
                                      cat_features_info=cat_features_info)
-    print(f"ctr_features = {ctr_features}")
+    print(f"ctr_features =\n{ctr_features}")
 
     # Compare against correct CTR features from Catboost. The reference CTR features were
     # computed by running the following code snippet:
